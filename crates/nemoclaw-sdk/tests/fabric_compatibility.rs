@@ -58,8 +58,15 @@ fn public_fabric_configuration_passes_through_without_overriding_deployment_bind
     input["spec"]["sandboxes"]["assistant"]["harness"]["config"] = json!({
         "mcp":{"servers":{"custom":{"transport":"stdio","url":"owned-fixture","exposure":"harness_native"}}},
         "relay":{"plugins":{"dynamic":[{"manifest":"/plugins/example/relay-plugin.toml","config":{"mode":"route"}}]}},
-        "runtime":{"max_turns":3}
+        "runtime":{"max_turns":3},
+        "skills":{"paths":["/sandbox/workspace/skills/capability-probe"]}
     });
+    input["spec"]["sandboxes"]["assistant"]["driverConfig"] = json!({"docker":{"mounts":[{
+        "type":"volume",
+        "source":"workspace",
+        "target":"/sandbox/workspace",
+        "read_only":false
+    }]}});
     let doc = Document::parse(input.to_string().as_bytes()).unwrap();
     let actual =
         nemoclaw_sdk::fabric_config::for_sandbox(&doc, doc.sandbox("assistant").unwrap()).unwrap();
@@ -71,6 +78,10 @@ fn public_fabric_configuration_passes_through_without_overriding_deployment_bind
     assert_eq!(
         actual["relay"],
         input["spec"]["sandboxes"]["assistant"]["harness"]["config"]["relay"]
+    );
+    assert_eq!(
+        actual["skills"],
+        input["spec"]["sandboxes"]["assistant"]["harness"]["config"]["skills"]
     );
     input["spec"]["sandboxes"]["assistant"]["harness"]["config"]["models"] =
         json!({"default":{"base_url":"https://substituted.invalid"}});
